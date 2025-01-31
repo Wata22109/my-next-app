@@ -18,7 +18,7 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
         case "straight":
           return [0, 180];
         case "corner":
-          return [90, 180]; // 下と左を基本方向に
+          return [90, 180];
         case "tee":
           return [0, 90, 180];
         case "cross":
@@ -40,13 +40,7 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
   const getActualConnectedDirections = useCallback(
     (pipe: PipeState): number[] => {
       const baseDirections = getBaseConnectedDirections(pipe);
-      return baseDirections.map((dir) => {
-        const actualDir = (dir + pipe.direction) % 360;
-        console.log(
-          `Base direction: ${dir}, Pipe direction: ${pipe.direction}, Actual direction: ${actualDir}`
-        );
-        return actualDir;
-      });
+      return baseDirections.map((dir) => (dir + pipe.direction) % 360);
     },
     [getBaseConnectedDirections]
   );
@@ -54,26 +48,12 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
   // 接続チェックのロジック
   const checkConnection = useCallback(
     (pipe: PipeState, fromDirection: number): boolean => {
-      console.log(
-        `Checking connection for pipe type ${pipe.type} at fromDirection ${fromDirection}, pipe direction ${pipe.direction}`
-      );
-
-      // パイプの接続可能方向を取得
       const actualDirections = getActualConnectedDirections(pipe);
-
-      // スタート地点の特別処理
       if (pipe.type === "start" && fromDirection === 0) {
         return true;
       }
-
-      // 接続チェック
       const oppositeDirection = (fromDirection + 180) % 360;
-      const isConnected = actualDirections.includes(oppositeDirection);
-
-      console.log(
-        `Actual directions: ${actualDirections}, Required direction: ${oppositeDirection}, Is connected: ${isConnected}`
-      );
-      return isConnected;
+      return actualDirections.includes(oppositeDirection);
     },
     [getActualConnectedDirections]
   );
@@ -83,13 +63,13 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
     (row: number, col: number, direction: number): [number, number] => {
       switch (direction) {
         case 0:
-          return [row, col + 1]; // 右
+          return [row, col + 1];
         case 90:
-          return [row + 1, col]; // 下
+          return [row + 1, col];
         case 180:
-          return [row, col - 1]; // 左
+          return [row, col - 1];
         case 270:
-          return [row - 1, col]; // 上
+          return [row - 1, col];
         default:
           return [row, col];
       }
@@ -98,116 +78,158 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
   );
 
   // 深さ優先探索による接続確認
-  const dfs = useCallback(
+  const exploreAllPaths = useCallback(
     (
       row: number,
       col: number,
       fromDirection: number,
-      connected: boolean[][]
+      connected: boolean[][],
+      visitedGoals: Set<string>,
+      visited: Set<string>
     ): boolean => {
       // 境界チェック
       if (row < 0 || row >= board.length || col < 0 || col >= board[0].length) {
-        console.log(`Out of bounds: [${row}, ${col}]`);
         return false;
       }
 
+      const currentKey = `${row},${col}`;
       const pipe = board[row][col];
-      if (!pipe || connected[row][col]) {
-        console.log(`Invalid pipe or already connected: [${row}, ${col}]`);
+
+      if (!pipe || visited.has(currentKey)) {
         return false;
       }
-
-      console.log(
-        `Checking pipe at [${row}, ${col}], type: ${pipe.type}, direction: ${pipe.direction}`
-      );
 
       if (!checkConnection(pipe, fromDirection)) {
-        console.log(`Connection failed at [${row}, ${col}]`);
         return false;
       }
 
+      visited.add(currentKey);
       connected[row][col] = true;
-      console.log(`Connected pipe at [${row}, ${col}]`);
 
+      // ゴールに到達した場合
       if (pipe.type === "end") {
-        console.log("Found end pipe - Stage clear!");
-        onClear?.();
-        return true;
+        visitedGoals.add(currentKey);
       }
 
       // 次の接続を試行
       const actualDirections = getActualConnectedDirections(pipe);
       for (const direction of actualDirections) {
-        if ((direction + 180) % 360 === fromDirection) continue; // 来た方向には戻らない
+        if ((direction + 180) % 360 === fromDirection) continue;
 
         const [nextRow, nextCol] = getNextPosition(row, col, direction);
-        console.log(
-          `Trying next position: direction ${direction} -> [${nextRow}, ${nextCol}]`
+        exploreAllPaths(
+          nextRow,
+          nextCol,
+          direction,
+          connected,
+          visitedGoals,
+          visited
         );
-
-        if (dfs(nextRow, nextCol, direction, connected)) {
-          return true;
-        }
       }
 
-      return false;
+      // このパスでつながっているパイプは接続済みとしてマーク
+      return true;
     },
-    [
-      board,
-      checkConnection,
-      getActualConnectedDirections,
-      getNextPosition,
-      onClear,
-    ]
+    [board, checkConnection, getActualConnectedDirections, getNextPosition]
   );
 
   // 接続状態の更新
   const updateConnections = useCallback(() => {
     if (!board.length) return;
 
+    // 接続状態を初期化
     const connected = Array(stage.height)
       .fill(0)
       .map(() => Array(stage.width).fill(false));
-    let startRow = -1;
-    let startCol = -1;
 
-    // スタート位置を検索
+    // スタート位置とゴール位置を検索
+    const startPositions: { row: number; col: number }[] = [];
+    const goalPositions: { row: number; col: number }[] = [];
+
     for (let i = 0; i < board.length; i++) {
       for (let j = 0; j < board[i].length; j++) {
         if (board[i][j].type === "start") {
-          startRow = i;
-          startCol = j;
-          break;
+          startPositions.push({ row: i, col: j });
+        } else if (board[i][j].type === "end") {
+          goalPositions.push({ row: i, col: j });
         }
       }
-      if (startRow !== -1) break;
     }
 
-    console.log(`Start position found at [${startRow}, ${startCol}]`);
+    if (startPositions.length === 0 || goalPositions.length === 0) return;
 
-    if (startRow !== -1 && startCol !== -1) {
-      dfs(startRow, startCol, 0, connected);
+    console.log(
+      `Found ${startPositions.length} starts and ${goalPositions.length} goals`
+    );
+
+    let allStartsConnectedToGoals = true;
+    let allGoalsConnected = true;
+    const connectedGoals = new Set<string>();
+
+    // 各スタート位置からの探索
+    for (const startPos of startPositions) {
+      const currentConnected = Array(stage.height)
+        .fill(0)
+        .map(() => Array(stage.width).fill(false));
+
+      const visitedGoals = new Set<string>();
+      const visited = new Set<string>();
+
+      exploreAllPaths(
+        startPos.row,
+        startPos.col,
+        0,
+        currentConnected,
+        visitedGoals,
+        visited
+      );
+
+      // このスタートがすべてのゴールに到達できたか、
+      // もしくは他のスタートと合わせてすべてのゴールに到達できたかをチェック
+      for (const goal of goalPositions) {
+        const goalKey = `${goal.row},${goal.col}`;
+        if (visitedGoals.has(goalKey)) {
+          connectedGoals.add(goalKey);
+        }
+      }
+
+      // このスタートからの接続情報を統合
+      for (let i = 0; i < currentConnected.length; i++) {
+        for (let j = 0; j < currentConnected[i].length; j++) {
+          if (currentConnected[i][j]) {
+            connected[i][j] = true;
+          }
+        }
+      }
+    }
+
+    // すべてのゴールがいずれかのスタートと接続されているかチェック
+    allGoalsConnected = goalPositions.every((goal) =>
+      connectedGoals.has(`${goal.row},${goal.col}`)
+    );
+
+    // クリア条件: すべてのゴールがいずれかのスタートと接続されている
+    if (allGoalsConnected) {
+      console.log("All connections complete - Stage clear!");
+      onClear?.();
+    } else {
+      console.log("Not all connections are complete");
     }
 
     setConnectedPipes(connected);
-  }, [board, stage.height, stage.width, dfs]);
+  }, [board, stage.height, stage.width, exploreAllPaths, onClear]);
 
   // パイプの回転
   const rotatePipe = useCallback((rowIndex: number, colIndex: number) => {
-    console.log(`Attempting to rotate pipe at [${rowIndex}, ${colIndex}]`);
-
     setBoard((prevBoard) => {
       const currentPipe = prevBoard[rowIndex]?.[colIndex];
       if (!currentPipe || currentPipe.isFixed) {
-        console.log("Pipe is fixed or undefined");
         return prevBoard;
       }
 
       const newBoard = prevBoard.map((row) => [...row]);
       const newDirection = ((currentPipe.direction + 90) %
         360) as PipeDirection;
-
-      console.log(`Rotating from ${currentPipe.direction} to ${newDirection}`);
 
       newBoard[rowIndex] = [...newBoard[rowIndex]];
       newBoard[rowIndex][colIndex] = {

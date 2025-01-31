@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const revalidate = 0; // ◀ サーバサイドのキャッシュを無効化する設定
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

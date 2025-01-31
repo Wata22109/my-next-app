@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const revalidate = 0; // ◀ サーバサイドのキャッシュを無効化する設定
+
 export async function GET() {
   try {
     console.log("Prisma client:", prisma); // デバッグ用

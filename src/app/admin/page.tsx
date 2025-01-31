@@ -21,14 +21,12 @@ export default function AdminPage() {
       const response = await fetch("/api/stages");
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Error Response:", errorData); // デバッグログ追加
         throw new Error(errorData.details || "Failed to fetch stages");
       }
       const data = await response.json();
-      console.log("Fetched Data:", data); // デバッグログ追加
       setStages(data);
     } catch (error) {
-      console.error("Error fetching stages (detailed):", error);
+      console.error("Error fetching stages:", error);
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setLoading(false);
@@ -82,12 +80,16 @@ export default function AdminPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Stage Management</h1>
-        <Link
-          href="/admin/stage/new"
-          className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-        >
-          Create New Stage
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="secondary" size="sm">
+              ← Back to Main
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">Stage Management</h1>
+        </div>
+        <Link href="/admin/stage/new">
+          <Button variant="primary">Create New Stage</Button>
         </Link>
       </div>
 

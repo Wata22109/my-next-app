@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import GameController from "@/components/game/GameController";
 import { Stage, PipeState, PipeDirection, PipeType } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
 
 const validatePipeState = (pipe: any): PipeState => {
   if (!pipe || typeof pipe !== "object") {
@@ -119,7 +121,6 @@ export default function GamePage({ params }: { params: { stage: string } }) {
   }, [params.stage, router]);
 
   const handleStageClear = () => {
-    // ステージクリア時のローカルストレージ更新
     try {
       const clearedStages = JSON.parse(
         localStorage.getItem("clearedStages") || "[]"
@@ -132,7 +133,6 @@ export default function GamePage({ params }: { params: { stage: string } }) {
       console.error("Error updating localStorage:", error);
     }
 
-    // 遅延付きでホームページに戻る
     setTimeout(() => {
       router.push("/");
     }, 2000);
@@ -167,6 +167,13 @@ export default function GamePage({ params }: { params: { stage: string } }) {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="mb-4">
+        <Link href="/">
+          <Button variant="secondary" size="sm">
+            ← Back to Main
+          </Button>
+        </Link>
+      </div>
       <GameController stage={stage} onStageClear={handleStageClear} />
     </div>
   );
