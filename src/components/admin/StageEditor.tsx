@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { PipeState, PipeType } from "@/lib/types";
 import Pipe from "../game/Pipe";
 
@@ -50,51 +50,64 @@ export const StageEditor: React.FC<StageEditorProps> = ({
         )
   );
 
-  const handleSizeChange = (newWidth: number, newHeight: number) => {
-    const newPipes: PipeState[][] = Array(newHeight)
-      .fill(0)
-      .map(() =>
-        Array(newWidth)
-          .fill(0)
-          .map(() => ({
-            type: "straight" as PipeType,
-            direction: 0,
-            isFixed: false,
-          }))
+  const handleSizeChange = useCallback(
+    (newWidth: number, newHeight: number) => {
+      const newPipes: PipeState[][] = Array(newHeight)
+        .fill(0)
+        .map(() =>
+          Array(newWidth)
+            .fill(0)
+            .map(() => ({
+              type: "straight" as PipeType,
+              direction: 0,
+              isFixed: false,
+            }))
+        );
+      setPipes(newPipes);
+      setWidth(newWidth);
+      setHeight(newHeight);
+    },
+    []
+  );
+
+  const handleGridCellClick = useCallback(
+    (rowIndex: number, colIndex: number) => {
+      console.log(
+        `Placing pipe at [${rowIndex}, ${colIndex}], type: ${selectedType}`
       );
-    setPipes(newPipes);
-    setWidth(newWidth);
-    setHeight(newHeight);
-  };
+      setPipes((prevPipes) => {
+        const newPipes = prevPipes.map((row) => [...row]);
+        newPipes[rowIndex] = [...newPipes[rowIndex]];
+        newPipes[rowIndex][colIndex] = {
+          type: selectedType,
+          direction: 0,
+          isFixed,
+        };
+        return newPipes;
+      });
+    },
+    [selectedType, isFixed]
+  );
 
-  const handleCellClick = (row: number, col: number) => {
-    const newPipes = [...pipes];
-    newPipes[row][col] = {
-      type: selectedType,
-      direction: 0,
-      isFixed,
-    };
-    setPipes(newPipes);
-  };
-
-  const handleRotate = (row: number, col: number) => {
-    const newPipes = [...pipes];
-    const currentDirection = newPipes[row][col].direction;
-    newPipes[row][col] = {
-      ...newPipes[row][col],
-      direction: ((currentDirection + 90) % 360) as PipeState["direction"],
-    };
-    setPipes(newPipes);
-  };
-
-  const handleSaveClick = () => {
-    onSave({
-      name,
-      width,
-      height,
-      pipes,
+  const handleRotate = useCallback((rowIndex: number, colIndex: number) => {
+    console.log(`Rotating pipe at [${rowIndex}, ${colIndex}]`);
+    setPipes((prevPipes) => {
+      const newPipes = prevPipes.map((row) => [...row]);
+      const currentPipe = newPipes[rowIndex][colIndex];
+      newPipes[rowIndex] = [...newPipes[rowIndex]];
+      newPipes[rowIndex][colIndex] = {
+        ...currentPipe,
+        direction: ((currentPipe.direction + 90) %
+          360) as PipeState["direction"],
+      };
+      return newPipes;
     });
-  };
+  }, []);
+
+  const handlePipeTypeSelect = useCallback((type: PipeType) => {
+    console.log("Selected pipe type:", type);
+    setSelectedType(type);
+  }, []);
 
   return (
     <div className="p-4">
@@ -137,12 +150,13 @@ export const StageEditor: React.FC<StageEditorProps> = ({
         <label className="mb-2 block">Pipe Type:</label>
         <div className="flex gap-2">
           {PIPE_TYPES.map((type) => (
-            <button
+            <div
               key={type}
-              onClick={() => setSelectedType(type)}
-              className={`rounded border p-2 ${
-                selectedType === type ? "bg-blue-500 text-white" : ""
-              }`}
+              className={`
+                cursor-pointer rounded border p-2
+                ${selectedType === type ? "bg-blue-500" : "hover:bg-gray-100"}
+              `}
+              onClick={() => handlePipeTypeSelect(type)}
             >
               <Pipe
                 pipe={{
@@ -150,8 +164,10 @@ export const StageEditor: React.FC<StageEditorProps> = ({
                   direction: 0,
                   isFixed: false,
                 }}
+                position={{ row: -1, col: -1 }}
+                onClick={() => handlePipeTypeSelect(type)}
               />
-            </button>
+            </div>
           ))}
         </div>
       </div>
@@ -170,7 +186,7 @@ export const StageEditor: React.FC<StageEditorProps> = ({
 
       <div className="mb-4">
         <div
-          className="grid gap-1 rounded-lg bg-white shadow"
+          className="grid gap-1 rounded-lg bg-white p-2 shadow"
           style={{
             gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`,
           }}
@@ -180,13 +196,21 @@ export const StageEditor: React.FC<StageEditorProps> = ({
               <div
                 key={`${rowIndex}-${colIndex}`}
                 className="relative"
-                onClick={() => handleCellClick(rowIndex, colIndex)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleGridCellClick(rowIndex, colIndex);
+                }}
                 onContextMenu={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   handleRotate(rowIndex, colIndex);
                 }}
               >
-                <Pipe pipe={pipe} />
+                <Pipe
+                  pipe={pipe}
+                  position={{ row: rowIndex, col: colIndex }}
+                  onClick={() => handleGridCellClick(rowIndex, colIndex)}
+                />
               </div>
             ))
           )}
@@ -194,7 +218,7 @@ export const StageEditor: React.FC<StageEditorProps> = ({
       </div>
 
       <button
-        onClick={handleSaveClick}
+        onClick={() => onSave({ name, width, height, pipes })}
         className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
       >
         Save Stage

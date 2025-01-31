@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Pipe from "./Pipe";
-import { PipeState, Stage, PipeDirection, PipeType } from "@/lib/types";
+import { PipeState, Stage, PipeDirection } from "@/lib/types";
 
 interface BoardProps {
   stage: Stage;
@@ -8,31 +8,11 @@ interface BoardProps {
 }
 
 export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
-  const [board, setBoard] = useState<PipeState[][]>(() => {
-    return (
-      stage.pipes ||
-      Array(stage.height)
-        .fill(null)
-        .map(() =>
-          Array(stage.width).fill({
-            type: "empty" as PipeType,
-            direction: 0 as PipeDirection,
-            isFixed: false,
-          })
-        )
-    );
-  });
-
-  const [connectedPipes, setConnectedPipes] = useState<boolean[][]>(() =>
-    Array(stage?.height || 0)
-      .fill(null)
-      .map(() => Array(stage?.width || 0).fill(false))
-  );
+  const [board, setBoard] = useState<PipeState[][]>([]);
+  const [connectedPipes, setConnectedPipes] = useState<boolean[][]>([]);
 
   // パイプの接続方向を取得
   const getConnectedDirections = useCallback((pipe: PipeState): number[] => {
-    if (!pipe) return [];
-
     switch (pipe.type) {
       case "straight":
         return [0, 180];
@@ -53,10 +33,9 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
     }
   }, []);
 
-  // パイプの接続をチェック
+  // 接続チェック
   const checkConnection = useCallback(
     (pipe: PipeState, fromDirection: number) => {
-      if (!pipe) return false;
       const normalizedFromDirection =
         (360 + (fromDirection - pipe.direction)) % 360;
       const connections = getConnectedDirections(pipe);
@@ -65,7 +44,7 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
     [getConnectedDirections]
   );
 
-  // 次のセルの位置を取得
+  // 次の位置を取得
   const getNextPosition = useCallback(
     (row: number, col: number, direction: number): [number, number] => {
       switch (direction) {
@@ -86,19 +65,18 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
 
   // 接続状態の更新
   const updateConnections = useCallback(() => {
-    if (!board || !Array.isArray(board) || board.length === 0) return;
+    if (!board.length) return;
 
     const connected = Array(stage.height)
-      .fill(null)
+      .fill(0)
       .map(() => Array(stage.width).fill(false));
-
     let startRow = -1;
     let startCol = -1;
 
     // スタート位置を検索
-    for (let i = 0; i < stage.height; i++) {
-      for (let j = 0; j < stage.width; j++) {
-        if (board[i]?.[j]?.type === "start") {
+    for (let i = 0; i < board.length; i++) {
+      for (let j = 0; j < board[i].length; j++) {
+        if (board[i][j].type === "start") {
           startRow = i;
           startCol = j;
           break;
@@ -113,14 +91,11 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
         col: number,
         fromDirection: number
       ): boolean => {
-        // 境界チェック
         if (
           row < 0 ||
-          row >= stage.height ||
+          row >= board.length ||
           col < 0 ||
-          col >= stage.width ||
-          !board[row] ||
-          !board[row][col]
+          col >= board[0].length
         ) {
           return false;
         }
@@ -165,63 +140,56 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
     getNextPosition,
   ]);
 
-  // 接続状態の初期化
+  // パイプの回転
+  const rotatePipe = useCallback((rowIndex: number, colIndex: number) => {
+    console.log(`Attempting to rotate pipe at [${rowIndex}, ${colIndex}]`);
+
+    setBoard((prevBoard) => {
+      const currentPipe = prevBoard[rowIndex]?.[colIndex];
+      if (!currentPipe || currentPipe.isFixed) {
+        console.log("Pipe is fixed or undefined");
+        return prevBoard;
+      }
+
+      const newBoard = prevBoard.map((row) => [...row]);
+      const newDirection = ((currentPipe.direction + 90) %
+        360) as PipeDirection;
+
+      console.log(`Rotating from ${currentPipe.direction} to ${newDirection}`);
+
+      newBoard[rowIndex] = [...newBoard[rowIndex]];
+      newBoard[rowIndex][colIndex] = {
+        ...currentPipe,
+        direction: newDirection,
+      };
+
+      return newBoard;
+    });
+  }, []);
+
+  // ボードの初期化
   useEffect(() => {
-    if (stage?.pipes && Array.isArray(stage.pipes)) {
-      setBoard(stage.pipes);
+    if (stage?.pipes) {
+      const initialBoard = stage.pipes.map((row) =>
+        row.map((pipe) => ({
+          ...pipe,
+          isFixed: pipe.type === "start" || pipe.type === "end" || pipe.isFixed,
+        }))
+      );
+      setBoard(initialBoard);
       setConnectedPipes(
         Array(stage.height)
-          .fill(null)
+          .fill(0)
           .map(() => Array(stage.width).fill(false))
       );
-      updateConnections();
     }
-  }, [stage?.pipes, stage?.height, stage?.width, updateConnections]);
+  }, [stage?.pipes, stage.height, stage.width]);
 
-  // パイプの回転
-  const rotatePipe = useCallback(
-    (row: number, col: number) => {
-      console.log("Attempting to rotate pipe at:", row, col);
+  // 接続状態の更新
+  useEffect(() => {
+    updateConnections();
+  }, [board, updateConnections]);
 
-      // 境界チェック
-      if (row < 0 || row >= board.length || col < 0 || col >= board[0].length) {
-        console.warn("Invalid position:", row, col);
-        return;
-      }
-
-      // パイプの存在と固定状態のチェック
-      const currentPipe = board[row][col];
-      if (!currentPipe || currentPipe.isFixed) {
-        console.warn("Pipe is fixed or undefined:", currentPipe);
-        return;
-      }
-
-      const newBoard = board.map((rowArr, rowIndex) =>
-        rowArr.map((pipe, colIndex) => {
-          if (rowIndex === row && colIndex === col) {
-            const newDirection = ((pipe.direction + 90) % 360) as PipeDirection;
-            console.log("Rotating from", pipe.direction, "to", newDirection);
-            return {
-              ...pipe,
-              direction: newDirection,
-            };
-          }
-          return pipe;
-        })
-      );
-
-      console.log("Setting new board state");
-      setBoard(newBoard);
-
-      // 接続状態の更新を確実に行う
-      requestAnimationFrame(() => {
-        updateConnections();
-      });
-    },
-    [board, updateConnections]
-  );
-
-  // パイプのレンダリング
   return (
     <div
       className="grid gap-1 rounded-lg bg-white p-4 shadow-lg"
@@ -237,10 +205,8 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
               ...pipe,
               isConnected: connectedPipes[rowIndex]?.[colIndex] || false,
             }}
-            onClick={() => {
-              console.log("Pipe clicked:", rowIndex, colIndex); // クリックイベントのデバッグログ
-              rotatePipe(rowIndex, colIndex);
-            }}
+            onClick={() => rotatePipe(rowIndex, colIndex)}
+            position={{ row: rowIndex, col: colIndex }}
           />
         ))
       )}
@@ -248,4 +214,4 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
   );
 };
 
-export default Board;
+export default React.memo(Board);

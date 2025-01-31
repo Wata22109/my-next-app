@@ -39,7 +39,7 @@ const GameController: React.FC<GameControllerProps> = ({
       <Board stage={stage} onClear={handleStageClear} />
 
       {showClearMessage && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50">
           <div className="rounded-lg bg-white p-8 shadow-xl">
             <h2 className="text-2xl font-bold text-green-600">Stage Clear!</h2>
           </div>
