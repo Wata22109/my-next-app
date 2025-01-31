@@ -133,7 +133,7 @@ export default function Home() {
                   {isLocked ? (
                     <div className="flex items-center text-gray-500">
                       <LockIcon className="mr-2 size-4" />
-                      <p className="text-sm">Clear previous stage to unlock</p>
+                      <p className="text-sm">前のステージをクリア</p>
                     </div>
                   ) : (
                     <Link
