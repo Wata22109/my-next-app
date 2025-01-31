@@ -11,17 +11,17 @@ const Pipe: React.FC<PipeProps> = React.memo(({ pipe, onClick, position }) => {
   const getPipePath = (type: PipeState["type"]) => {
     switch (type) {
       case "straight":
-        return "M 20,50 L 80,50 M 50,20 L 50,80";
+        return "M 20,50 L 80,50";
       case "corner":
         return "M 20,50 L 50,50 L 50,80";
       case "tee":
         return "M 20,50 L 80,50 M 50,50 L 50,80";
       case "cross":
-        return "M 20,50 L 80,50 M 35,35 L 65,65";
+        return "M 20,50 L 80,50 M 50,20 L 50,80";
       case "start":
-        return "M 50,20 L 50,80";
+        return "M 20,50 L 80,50";
       case "end":
-        return "M 50,20 L 50,80";
+        return "M 20,50 L 80,50";
       case "empty":
       default:
         return "";

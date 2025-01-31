@@ -11,56 +11,154 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
   const [board, setBoard] = useState<PipeState[][]>([]);
   const [connectedPipes, setConnectedPipes] = useState<boolean[][]>([]);
 
-  // パイプの接続方向を取得
-  const getConnectedDirections = useCallback((pipe: PipeState): number[] => {
-    switch (pipe.type) {
-      case "straight":
-        return [0, 180];
-      case "corner":
-        return [0, 90];
-      case "tee":
-        return [0, 90, 180];
-      case "cross":
-        return [0, 90, 180, 270];
-      case "start":
-        return [0];
-      case "end":
-        return [180];
-      case "empty":
-        return [];
-      default:
-        return [];
-    }
-  }, []);
-
-  // 接続チェック
-  const checkConnection = useCallback(
-    (pipe: PipeState, fromDirection: number) => {
-      const normalizedFromDirection =
-        (360 + (fromDirection - pipe.direction)) % 360;
-      const connections = getConnectedDirections(pipe);
-      return connections.includes(normalizedFromDirection);
+  // パイプの基本接続方向を定義
+  const getBaseConnectedDirections = useCallback(
+    (pipe: PipeState): number[] => {
+      switch (pipe.type) {
+        case "straight":
+          return [0, 180];
+        case "corner":
+          return [90, 180]; // 下と左を基本方向に
+        case "tee":
+          return [0, 90, 180];
+        case "cross":
+          return [0, 90, 180, 270];
+        case "start":
+          return [0];
+        case "end":
+          return [180];
+        case "empty":
+          return [];
+        default:
+          return [];
+      }
     },
-    [getConnectedDirections]
+    []
   );
 
-  // 次の位置を取得
+  // パイプの実際の接続方向を計算
+  const getActualConnectedDirections = useCallback(
+    (pipe: PipeState): number[] => {
+      const baseDirections = getBaseConnectedDirections(pipe);
+      return baseDirections.map((dir) => {
+        const actualDir = (dir + pipe.direction) % 360;
+        console.log(
+          `Base direction: ${dir}, Pipe direction: ${pipe.direction}, Actual direction: ${actualDir}`
+        );
+        return actualDir;
+      });
+    },
+    [getBaseConnectedDirections]
+  );
+
+  // 接続チェックのロジック
+  const checkConnection = useCallback(
+    (pipe: PipeState, fromDirection: number): boolean => {
+      console.log(
+        `Checking connection for pipe type ${pipe.type} at fromDirection ${fromDirection}, pipe direction ${pipe.direction}`
+      );
+
+      // パイプの接続可能方向を取得
+      const actualDirections = getActualConnectedDirections(pipe);
+
+      // スタート地点の特別処理
+      if (pipe.type === "start" && fromDirection === 0) {
+        return true;
+      }
+
+      // 接続チェック
+      const oppositeDirection = (fromDirection + 180) % 360;
+      const isConnected = actualDirections.includes(oppositeDirection);
+
+      console.log(
+        `Actual directions: ${actualDirections}, Required direction: ${oppositeDirection}, Is connected: ${isConnected}`
+      );
+      return isConnected;
+    },
+    [getActualConnectedDirections]
+  );
+
+  // 次のセルの位置を計算
   const getNextPosition = useCallback(
     (row: number, col: number, direction: number): [number, number] => {
       switch (direction) {
         case 0:
-          return [row, col + 1];
+          return [row, col + 1]; // 右
         case 90:
-          return [row + 1, col];
+          return [row + 1, col]; // 下
         case 180:
-          return [row, col - 1];
+          return [row, col - 1]; // 左
         case 270:
-          return [row - 1, col];
+          return [row - 1, col]; // 上
         default:
           return [row, col];
       }
     },
     []
+  );
+
+  // 深さ優先探索による接続確認
+  const dfs = useCallback(
+    (
+      row: number,
+      col: number,
+      fromDirection: number,
+      connected: boolean[][]
+    ): boolean => {
+      // 境界チェック
+      if (row < 0 || row >= board.length || col < 0 || col >= board[0].length) {
+        console.log(`Out of bounds: [${row}, ${col}]`);
+        return false;
+      }
+
+      const pipe = board[row][col];
+      if (!pipe || connected[row][col]) {
+        console.log(`Invalid pipe or already connected: [${row}, ${col}]`);
+        return false;
+      }
+
+      console.log(
+        `Checking pipe at [${row}, ${col}], type: ${pipe.type}, direction: ${pipe.direction}`
+      );
+
+      if (!checkConnection(pipe, fromDirection)) {
+        console.log(`Connection failed at [${row}, ${col}]`);
+        return false;
+      }
+
+      connected[row][col] = true;
+      console.log(`Connected pipe at [${row}, ${col}]`);
+
+      if (pipe.type === "end") {
+        console.log("Found end pipe - Stage clear!");
+        onClear?.();
+        return true;
+      }
+
+      // 次の接続を試行
+      const actualDirections = getActualConnectedDirections(pipe);
+      for (const direction of actualDirections) {
+        if ((direction + 180) % 360 === fromDirection) continue; // 来た方向には戻らない
+
+        const [nextRow, nextCol] = getNextPosition(row, col, direction);
+        console.log(
+          `Trying next position: direction ${direction} -> [${nextRow}, ${nextCol}]`
+        );
+
+        if (dfs(nextRow, nextCol, direction, connected)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [
+      board,
+      checkConnection,
+      getActualConnectedDirections,
+      getNextPosition,
+      onClear,
+    ]
   );
 
   // 接続状態の更新
@@ -85,60 +183,14 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
       if (startRow !== -1) break;
     }
 
+    console.log(`Start position found at [${startRow}, ${startCol}]`);
+
     if (startRow !== -1 && startCol !== -1) {
-      const dfs = (
-        row: number,
-        col: number,
-        fromDirection: number
-      ): boolean => {
-        if (
-          row < 0 ||
-          row >= board.length ||
-          col < 0 ||
-          col >= board[0].length
-        ) {
-          return false;
-        }
-
-        const pipe = board[row][col];
-        if (!pipe || connected[row][col]) return false;
-
-        const isConnected = checkConnection(pipe, fromDirection);
-        if (!isConnected) return false;
-
-        connected[row][col] = true;
-
-        if (pipe.type === "end") {
-          onClear?.();
-          return true;
-        }
-
-        const directions = getConnectedDirections(pipe);
-        for (const direction of directions) {
-          const actualDirection = (direction + pipe.direction) % 360;
-          const [nextRow, nextCol] = getNextPosition(row, col, actualDirection);
-          const oppositeDirection = (actualDirection + 180) % 360;
-          if (dfs(nextRow, nextCol, oppositeDirection)) {
-            return true;
-          }
-        }
-
-        return false;
-      };
-
-      dfs(startRow, startCol, 0);
+      dfs(startRow, startCol, 0, connected);
     }
 
     setConnectedPipes(connected);
-  }, [
-    board,
-    stage.height,
-    stage.width,
-    onClear,
-    checkConnection,
-    getConnectedDirections,
-    getNextPosition,
-  ]);
+  }, [board, stage.height, stage.width, dfs]);
 
   // パイプの回転
   const rotatePipe = useCallback((rowIndex: number, colIndex: number) => {
@@ -187,7 +239,9 @@ export const Board: React.FC<BoardProps> = ({ stage, onClear }) => {
 
   // 接続状態の更新
   useEffect(() => {
-    updateConnections();
+    if (board.length > 0) {
+      updateConnections();
+    }
   }, [board, updateConnections]);
 
   return (
