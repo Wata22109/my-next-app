@@ -56,7 +56,7 @@
 pipesフィールドにはJSONタイプを採用し、複雑なパイプの配置データを柔軟に格納できるようにしています。
 以下は4x5のステージデータの例です。typeはパイプの形を表し、directionは方向を表します。isFixedは回転させることができないかを示しています。
 
-```json
+```yaml
 const exampleStage = {
 name: "Stage 1",
 width: 5,
