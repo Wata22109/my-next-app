@@ -58,43 +58,43 @@ pipesフィールドにはJSONタイプを採用し、複雑なパイプの配�
 
 ```yaml
 const exampleStage = {
-name: "Stage 1",
-width: 5,
-height: 4,
-pipes: [
-// 1行目
-[
-{ type: "start", direction: 0, isFixed: true }, // スタート地点
-{ type: "straight", direction: 90, isFixed: false },
-{ type: "corner", direction: 180, isFixed: false },
-{ type: "empty", direction: 0, isFixed: false },
-{ type: "straight", direction: 90, isFixed: false }
-],
-// 2行目
-[
-{ type: "empty", direction: 0, isFixed: false },
-{ type: "corner", direction: 0, isFixed: false },
-{ type: "straight", direction: 90, isFixed: false },
-{ type: "corner", direction: 270, isFixed: false },
-{ type: "empty", direction: 0, isFixed: false }
-],
-// 3行目
-[
-{ type: "corner", direction: 0, isFixed: false },
-{ type: "straight", direction: 90, isFixed: false },
-{ type: "empty", direction: 0, isFixed: false },
-{ type: "straight", direction: 180, isFixed: false },
-{ type: "corner", direction: 270, isFixed: false }
-],
-// 4行目 (最下行)
-[
-{ type: "empty", direction: 0, isFixed: false },
-{ type: "corner", direction: 90, isFixed: false },
-{ type: "straight", direction: 90, isFixed: false },
-{ type: "corner", direction: 180, isFixed: false },
-{ type: "end", direction: 180, isFixed: true } // ゴール
-]
-]
+    name: "Stage 1",
+    width: 5,
+    height: 4,
+    pipes: [
+        // 1行目
+        [
+            { type: "start", direction: 0, isFixed: true }, // スタート地点
+            { type: "straight", direction: 90, isFixed: false },
+            { type: "corner", direction: 180, isFixed: false },
+            { type: "empty", direction: 0, isFixed: false },
+            { type: "straight", direction: 90, isFixed: false }
+        ],
+        // 2行目
+        [
+            { type: "empty", direction: 0, isFixed: false },
+            { type: "corner", direction: 0, isFixed: false },
+            { type: "straight", direction: 90, isFixed: false },
+            { type: "corner", direction: 270, isFixed: false },
+            { type: "empty", direction: 0, isFixed: false }
+        ],
+        // 3行目
+        [
+            { type: "corner", direction: 0, isFixed: false },
+            { type: "straight", direction: 90, isFixed: false },
+            { type: "empty", direction: 0, isFixed: false },
+            { type: "straight", direction: 180, isFixed: false },
+            { type: "corner", direction: 270, isFixed: false }
+        ],
+        // 4行目 (最下行)
+        [
+            { type: "empty", direction: 0, isFixed: false },
+            { type: "corner", direction: 90, isFixed: false },
+            { type: "straight", direction: 90, isFixed: false },
+            { type: "corner", direction: 180, isFixed: false },
+            { type: "end", direction: 180, isFixed: true } // ゴール
+        ]
+    ]
 }
 ```
 
