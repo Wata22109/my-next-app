@@ -34,7 +34,6 @@ export default function LoginPage() {
         } = await supabase.auth.getSession();
         console.log("Session after login:", session);
 
-        // 直接リダイレクトする代わりに少し待機
         setTimeout(() => {
           router.push("/admin");
           router.refresh();
