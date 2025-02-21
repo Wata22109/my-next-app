@@ -79,6 +79,11 @@ export default function Home() {
               Admin Login
             </Button>
           </Link>
+          <Link href="/admin">
+            <Button variant="secondary" size="sm">
+              Stage Create
+            </Button>
+          </Link>
         </div>
         <h1 className="mb-4 text-4xl font-bold text-gray-900">パイプつなぎ</h1>
         <div className="mx-auto max-w-xl">
