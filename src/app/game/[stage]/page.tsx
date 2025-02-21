@@ -65,7 +65,7 @@ const validateStageData = (data: any): Stage => {
       });
     }
   } else {
-    // パイプデータが配列でない場合、デフォルト値で初期化
+    // パイプデータが配列でない場合は初期化
     stage.pipes = Array(stage.height)
       .fill(null)
       .map(() =>
