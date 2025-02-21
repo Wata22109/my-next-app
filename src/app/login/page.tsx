@@ -1,6 +1,7 @@
 "use client";
+
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { supabase } from "@/utils/supabase";
 
@@ -10,9 +11,13 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (loading) return; // 二重送信防止
+
     setLoading(true);
     setError(null);
 
@@ -25,7 +30,6 @@ export default function LoginPage() {
       if (error) throw error;
 
       if (data.user) {
-        // セッションの取得を待つ
         const {
           data: { session },
           error: sessionError,
@@ -34,8 +38,10 @@ export default function LoginPage() {
         if (sessionError) throw sessionError;
 
         if (session) {
-          router.push("/admin");
-          router.refresh();
+          startTransition(() => {
+            router.push("/admin");
+            router.refresh();
+          });
         }
       }
     } catch (error: any) {
@@ -45,6 +51,9 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // loading状態をボタンに反映
+  const isButtonDisabled = loading || isPending;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -64,6 +73,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded border px-3 py-2"
               required
+              disabled={isButtonDisabled}
             />
           </div>
           <div className="mb-6">
@@ -74,10 +84,11 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded border px-3 py-2"
               required
+              disabled={isButtonDisabled}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
+          <Button type="submit" className="w-full" disabled={isButtonDisabled}>
+            {isButtonDisabled ? "Logging in..." : "Login"}
           </Button>
         </form>
       </div>
