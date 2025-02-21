@@ -123,13 +123,12 @@ export default function Home() {
                 <div className="relative z-10">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-gray-900">
-                      Stage {stage.id}
+                      Stage {stage.name}
                     </h2>
                     {isCleared && (
                       <TrophyIcon className="size-6 text-yellow-500" />
                     )}
                   </div>
-                  <p className="mb-4 text-gray-600">{stage.name}</p>
                   {isLocked ? (
                     <div className="flex items-center text-gray-500">
                       <LockIcon className="mr-2 size-4" />

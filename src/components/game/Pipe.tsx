@@ -183,7 +183,7 @@ const Pipe: React.FC<PipeProps> = React.memo(({ pipe, onClick, position }) => {
           </>
         )}
 
-        {/* エンドマーカー */}
+        {/* マーカー */}
         {pipe.type === "end" && (
           <>
             {/* 外側の輝き効果 */}
@@ -224,7 +224,7 @@ const Pipe: React.FC<PipeProps> = React.memo(({ pipe, onClick, position }) => {
           </>
         )}
 
-        {/* 接続状態インジケーター */}
+        {/* 接続状態 */}
         {!pipe.isFixed && pipe.isConnected && (
           <circle
             cx="50"
