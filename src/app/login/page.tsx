@@ -1,8 +1,8 @@
 "use client";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { supabase } from "@/utils/supabase"; // 共通のクライアントを使用
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,8 +10,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const supabase = createClientComponentClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,15 +27,11 @@ export default function LoginPage() {
       if (data.user) {
         console.log("Login successful:", data.user.email);
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        console.log("Session after login:", session);
+        // リダイレクト前にセッションが確実に設定されるのを待つ
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        setTimeout(() => {
-          router.push("/admin");
-          router.refresh();
-        }, 500);
+        router.push("/admin");
+        router.refresh();
       }
     } catch (error: any) {
       console.error("Login error:", error);
