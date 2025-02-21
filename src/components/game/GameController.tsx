@@ -33,7 +33,7 @@ const GameController: React.FC<GameControllerProps> = ({
   return (
     <div className="relative">
       <div className="mb-4 text-center text-xl font-bold">
-        Stage {stage.id}: {stage.name}
+        Stage {stage.name}
       </div>
 
       <Board stage={stage} onClear={handleStageClear} />
