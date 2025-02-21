@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { supabase } from "@/utils/supabase"; // 共通のクライアントを使用
+import { supabase } from "@/utils/supabase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -25,13 +25,18 @@ export default function LoginPage() {
       if (error) throw error;
 
       if (data.user) {
-        console.log("Login successful:", data.user.email);
+        // セッションの取得を待つ
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        // リダイレクト前にセッションが確実に設定されるのを待つ
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (sessionError) throw sessionError;
 
-        router.push("/admin");
-        router.refresh();
+        if (session) {
+          router.push("/admin");
+          router.refresh();
+        }
       }
     } catch (error: any) {
       console.error("Login error:", error);
