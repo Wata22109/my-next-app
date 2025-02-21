@@ -43,14 +43,14 @@ const Pipe: React.FC<PipeProps> = React.memo(({ pipe, onClick, position }) => {
   return (
     <div
       className={`
-        relative size-20 rounded-lg border-2
-        ${
-          pipe.isConnected
-            ? "border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.5)]"
-            : "border-gray-200"
-        }
-        ${pipe.isFixed ? "bg-gray-50" : "cursor-pointer hover:bg-gray-50"}
-        transition-all duration-300 ease-in-out
+      relative size-20 rounded-lg border-2
+      ${
+        pipe.isConnected
+          ? "border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+          : "border-gray-200"
+      }
+      ${pipe.isFixed ? "bg-gray-400" : "cursor-pointer hover:bg-gray-50"}
+      transition-all duration-300 ease-in-out
       `}
       onClick={handleClick}
       data-position={`${position.row}-${position.col}`}
@@ -90,11 +90,11 @@ const Pipe: React.FC<PipeProps> = React.memo(({ pipe, onClick, position }) => {
               in="blur"
               type="matrix"
               values="
-              1 0 0 0 0
-              0 1 0 0 0
-              0 0 1 0 0
-              0 0 0 18 -7
-            "
+          1 0 0 0 0
+          0 1 0 0 0
+          0 0 1 0 0
+          0 0 0 18 -7
+        "
             />
           </filter>
         </defs>
